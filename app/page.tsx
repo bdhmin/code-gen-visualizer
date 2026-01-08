@@ -3,7 +3,7 @@
 import { SplitView } from './components/panels/SplitView';
 import { ConversationPanel } from './components/ConversationPanel';
 import { SandboxPanel } from './components/SandboxPanel';
-import { CodeMyWayPanel } from './components/CodeMyWayPanel';
+import { CodeRepresentationViewPanel } from './components/CodeRepresentationViewPanel';
 import { useGeneration } from './hooks/useGeneration';
 
 export default function Home() {
@@ -37,8 +37,8 @@ export default function Home() {
           isReady={componentReady}
         />
 
-        {/* Panel 3: Code / My Way View Toggle */}
-        <CodeMyWayPanel
+        {/* Panel 3: Code / Code Representation Toggle */}
+        <CodeRepresentationViewPanel
           componentCode={componentCode}
           visualizationCode={visualizationCode}
           isVisualizing={isVisualizing}

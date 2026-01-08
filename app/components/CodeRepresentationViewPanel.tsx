@@ -2,23 +2,23 @@
 
 import { useState } from 'react';
 import { CodePanel } from './CodePanel';
-import { MyWayPanel } from './MyWayPanel';
+import { CodeRepresentationPanel } from './CodeRepresentationPanel';
 
-interface CodeMyWayPanelProps {
+interface CodeRepresentationViewPanelProps {
   componentCode: string;
   visualizationCode: string;
   isVisualizing: boolean;
   visualizationReady: boolean;
 }
 
-type ViewType = 'code' | 'myway' | 'myway-code';
+type ViewType = 'code' | 'representation' | 'representation-code';
 
-export function CodeMyWayPanel({ 
+export function CodeRepresentationViewPanel({ 
   componentCode, 
   visualizationCode, 
   isVisualizing,
   visualizationReady,
-}: CodeMyWayPanelProps) {
+}: CodeRepresentationViewPanelProps) {
   const [activeView, setActiveView] = useState<ViewType>('code');
 
   return (
@@ -41,37 +41,37 @@ export function CodeMyWayPanel({
           )}
         </button>
         <button
-          onClick={() => setActiveView('myway')}
+          onClick={() => setActiveView('representation')}
           className={`
             flex-1 px-2 py-2 text-xs font-medium transition-colors relative
-            ${activeView === 'myway'
+            ${activeView === 'representation'
               ? 'text-amber-400 bg-zinc-950'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
             }
           `}
         >
-          My Way
+          Code Representation
           {isVisualizing && (
             <span className="ml-1 inline-flex">
               <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
             </span>
           )}
-          {activeView === 'myway' && (
+          {activeView === 'representation' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-400" />
           )}
         </button>
         <button
-          onClick={() => setActiveView('myway-code')}
+          onClick={() => setActiveView('representation-code')}
           className={`
             flex-1 px-2 py-2 text-xs font-medium transition-colors relative
-            ${activeView === 'myway-code'
+            ${activeView === 'representation-code'
               ? 'text-emerald-400 bg-zinc-950'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
             }
           `}
         >
-          My Way Code
-          {activeView === 'myway-code' && (
+          Representation Code
+          {activeView === 'representation-code' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400" />
           )}
         </button>
@@ -82,18 +82,19 @@ export function CodeMyWayPanel({
         {activeView === 'code' && (
           <CodePanel code={componentCode} />
         )}
-        {activeView === 'myway' && (
-          <MyWayPanel 
+        {activeView === 'representation' && (
+          <CodeRepresentationPanel 
             code={visualizationCode} 
             isLoading={isVisualizing} 
             isReady={visualizationReady}
             showTitle={false} 
           />
         )}
-        {activeView === 'myway-code' && (
+        {activeView === 'representation-code' && (
           <CodePanel code={visualizationCode} />
         )}
       </div>
     </div>
   );
 }
+

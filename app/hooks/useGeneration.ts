@@ -151,7 +151,7 @@ export function useGeneration() {
       const vizMessage: Message = {
         id: (Date.now() + 2).toString(),
         role: 'assistant',
-        content: 'My Way View is ready! Toggle to see how the code works.',
+        content: 'Code Representation is ready! Toggle to see how the code works.',
       };
 
       setState((prev) => ({

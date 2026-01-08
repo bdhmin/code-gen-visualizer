@@ -37,7 +37,7 @@ export function CodePanel({ code, title }: CodePanelProps) {
     </div>
   );
 
-  // If no title, render without Panel wrapper (for use in CodeMyWayPanel)
+  // If no title, render without Panel wrapper (for use in CodeRepresentationViewPanel)
   if (!title) {
     return <div className="h-full w-full">{content}</div>;
   }
