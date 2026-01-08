@@ -1,5 +1,23 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment Variables
+
+Create a `.env.local` file with the following variables:
+
+```bash
+# Authentication (required)
+AUTH_PASSWORD=your_secure_password_here
+AUTH_SECRET=a_random_32_character_string_for_signing_sessions
+
+# Anthropic API
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+
+**Generate a secure AUTH_SECRET:**
+```bash
+openssl rand -base64 32
+```
+
 ## Getting Started
 
 First, run the development server:
