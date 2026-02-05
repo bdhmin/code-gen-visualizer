@@ -27,9 +27,9 @@ export function SplitView({
   // Sync sizes with children count
   useEffect(() => {
     if (sizes.length !== childCount) {
-      setSizes(initialSizes || childArray.map(() => 100 / childCount));
+      setSizes(initialSizes ?? Array.from({ length: childCount }, () => 100 / childCount));
     }
-  }, [childCount, initialSizes, sizes.length, childArray]);
+  }, [childCount, initialSizes, sizes.length]);
 
   const handleMouseDown = useCallback((index: number) => {
     draggingIndex.current = index;

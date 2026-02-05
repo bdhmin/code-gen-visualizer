@@ -1,4 +1,5 @@
 import * as Babel from '@babel/standalone';
+import { getErrorMessage } from './getErrorMessage';
 
 export interface TransformResult {
   success: boolean;
@@ -35,14 +36,19 @@ export function transformCode(code: string): TransformResult {
     }
     return { success: false, error: 'Transformation produced no output' };
   } catch (err) {
-    const error = err instanceof Error ? err.message : 'Unknown error during transformation';
-    return { success: false, error };
+    return { success: false, error: getErrorMessage(err) };
   }
 }
 
 export interface CreateComponentResult {
   component: React.ComponentType | null;
   error?: string;
+}
+
+const HOOK_NAMES = ['React', 'useState', 'useEffect', 'useCallback', 'useMemo', 'useRef'] as const;
+
+function getHookValues(React: typeof import('react')) {
+  return [React, React.useState, React.useEffect, React.useCallback, React.useMemo, React.useRef];
 }
 
 export function createComponent(
@@ -59,15 +65,8 @@ export function createComponent(
   }
 
   try {
-    // Create a function that returns the component
-    // The transformed code expects React to be available
     const componentFactory = new Function(
-      'React',
-      'useState',
-      'useEffect',
-      'useCallback',
-      'useMemo',
-      'useRef',
+      ...HOOK_NAMES,
       `
       ${transformResult.code}
       if (typeof Component !== 'undefined') {
@@ -77,14 +76,7 @@ export function createComponent(
       `
     );
 
-    const component = componentFactory(
-      React,
-      React.useState,
-      React.useEffect,
-      React.useCallback,
-      React.useMemo,
-      React.useRef
-    );
+    const component = componentFactory(...getHookValues(React));
 
     if (!component) {
       return { 
@@ -95,10 +87,9 @@ export function createComponent(
 
     return { component, error: undefined };
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     return { 
       component: null, 
-      error: `Execution error: ${errorMessage}` 
+      error: `Execution error: ${getErrorMessage(err)}` 
     };
   }
 }

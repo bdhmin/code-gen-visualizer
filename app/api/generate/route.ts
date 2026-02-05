@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateComponent } from '../../lib/anthropic';
+import { getErrorMessage } from '../../lib/getErrorMessage';
 import { COMPONENT_GENERATION_PROMPT } from '../../lib/prompts';
 
 export async function POST(request: NextRequest) {
@@ -17,9 +18,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ code });
   } catch (error) {
     console.error('Generation error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: `Failed to generate component: ${errorMessage}` },
+      { error: `Failed to generate component: ${getErrorMessage(error)}` },
       { status: 500 }
     );
   }
