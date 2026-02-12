@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createComponent } from '../lib/babel-transform';
 import { Panel } from './panels/Panel';
+import { ErrorBoundary } from './ErrorBoundary';
+import { LoadingDots } from './LoadingDots';
+import { useCompiledComponent } from '../hooks/useCompiledComponent';
 
 interface CodeRepresentationPanelProps {
   code: string;
@@ -11,80 +13,21 @@ interface CodeRepresentationPanelProps {
   showTitle?: boolean;
 }
 
-interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-}
-
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode; resetKey?: number; onError?: (error: Error) => void },
-  ErrorBoundaryState
-> {
-  constructor(props: { children: React.ReactNode; resetKey?: number; onError?: (error: Error) => void }) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error) {
-    this.props.onError?.(error);
-  }
-
-  componentDidUpdate(prevProps: { resetKey?: number }) {
-    if (prevProps.resetKey !== this.props.resetKey) {
-      this.setState({ hasError: false, error: null });
-    }
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="p-4 bg-rose-950/50 border border-rose-800 rounded-lg m-4">
-          <h3 className="text-rose-400 font-medium mb-2">Visualization Error</h3>
-          <p className="text-rose-300 text-sm font-mono">{this.state.error?.message}</p>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
 export function CodeRepresentationPanel({ code, isLoading, isReady = false, showTitle = true }: CodeRepresentationPanelProps) {
-  const [error, setError] = useState<string | null>(null);
-  const [VisualizationComponent, setVisualizationComponent] = useState<React.ComponentType | null>(null);
-  const [key, setKey] = useState(0);
+  const { component: VisualizationComponent, error: compileError, key } = useCompiledComponent(code, isReady, 'Failed to create visualization');
+  const [runtimeError, setRuntimeError] = useState<string | null>(null);
 
-  // Compile visualization when code is ready
   useEffect(() => {
-    if (!code || !isReady) {
-      setVisualizationComponent(null);
-      return;
-    }
+    setRuntimeError(null);
+  }, [key]);
 
-    const result = createComponent(code, React);
-    if (result.error || !result.component) {
-      setError(result.error || 'Failed to create visualization');
-      setVisualizationComponent(null);
-      return;
-    }
-    
-    setError(null);
-    setVisualizationComponent(() => result.component);
-    setKey((k) => k + 1);
-  }, [code, isReady]);
+  const error = compileError ?? runtimeError;
 
   const content = (
     <div className="h-full overflow-auto bg-zinc-900 p-4">
       {isLoading ? (
         <div className="flex flex-col items-center justify-center h-full text-zinc-500">
-          <div className="flex space-x-1 mb-3">
-            <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-          </div>
+          <LoadingDots color="amber" className="mb-3" />
           <p>Generating visualization...</p>
         </div>
       ) : !code ? (
@@ -105,7 +48,7 @@ export function CodeRepresentationPanel({ code, isLoading, isReady = false, show
           <p className="text-rose-300 text-sm font-mono">{error}</p>
         </div>
       ) : VisualizationComponent ? (
-        <ErrorBoundary key={key} resetKey={key} onError={(e) => setError(e.message)}>
+        <ErrorBoundary key={key} resetKey={key} onError={(e) => setRuntimeError(e.message)} title="Visualization Error" variant="rose">
           <VisualizationComponent />
         </ErrorBoundary>
       ) : (

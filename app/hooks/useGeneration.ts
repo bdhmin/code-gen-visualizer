@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { Message } from '../components/ConversationPanel';
+import { getErrorMessage } from '../lib/getErrorMessage';
 
 interface GenerationState {
   messages: Message[];
@@ -15,25 +16,21 @@ interface GenerationState {
 
 // Helper to clean code output
 function cleanCode(code: string): string {
-  if (!code) {
-    console.log('cleanCode: received empty code');
-    return '';
-  }
-  
+  if (!code) return '';
+
   let cleaned = code.trim();
-  console.log('cleanCode: raw length:', code.length, 'trimmed length:', cleaned.length);
-  
+
   // Remove markdown code blocks (various formats)
   cleaned = cleaned.replace(/^```(?:jsx|tsx|javascript|typescript|js|ts)?\s*\n?/gm, '');
   cleaned = cleaned.replace(/\n?```\s*$/gm, '');
   cleaned = cleaned.trim();
-  
+
   // If there's content before "const Component", try to extract just the component
   const componentMatch = cleaned.match(/(const Component[\s\S]*)/);
   if (componentMatch) {
     cleaned = componentMatch[1];
   }
-  
+
   // Remove any trailing text after the component definition ends
   const lastSemicolon = cleaned.lastIndexOf('};');
   if (lastSemicolon !== -1 && lastSemicolon < cleaned.length - 2) {
@@ -42,10 +39,8 @@ function cleanCode(code: string): string {
       cleaned = cleaned.slice(0, lastSemicolon + 2);
     }
   }
-  
-  const result = cleaned.trim();
-  console.log('cleanCode: final length:', result.length, 'starts with:', result.substring(0, 50));
-  return result;
+
+  return cleaned.trim();
 }
 
 export function useGeneration() {
@@ -60,17 +55,16 @@ export function useGeneration() {
   });
   
   const abortControllerRef = useRef<AbortController | null>(null);
+  const nextIdRef = useRef(0);
 
   const generate = useCallback(async (prompt: string) => {
-    // Abort any existing generation
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
     abortControllerRef.current = new AbortController();
 
-    // Add user message
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: (nextIdRef.current++).toString(),
       role: 'user',
       content: prompt,
     };
@@ -86,7 +80,6 @@ export function useGeneration() {
     }));
 
     try {
-      // Generate component (non-streaming)
       const generateResponse = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -102,28 +95,21 @@ export function useGeneration() {
       const { code: rawComponentCode } = await generateResponse.json();
       const componentCode = cleanCode(rawComponentCode);
 
-      // Update state with component code
-      setState((prev) => ({
-        ...prev,
-        componentCode,
-        isGenerating: false,
-        componentReady: true,
-      }));
-
-      // Add assistant message
       const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: (nextIdRef.current++).toString(),
         role: 'assistant',
         content: 'Component generated! Check the Preview panel.',
       };
 
       setState((prev) => ({
         ...prev,
+        componentCode,
+        isGenerating: false,
+        componentReady: true,
         messages: [...prev.messages, assistantMessage],
         isVisualizing: true,
       }));
 
-      // Generate visualization (non-streaming)
       const visualizeResponse = await fetch('/api/visualize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -139,36 +125,28 @@ export function useGeneration() {
       const { code: rawVisualizationCode } = await visualizeResponse.json();
       const visualizationCode = cleanCode(rawVisualizationCode);
 
-      // Update state with visualization code
-      setState((prev) => ({
-        ...prev,
-        visualizationCode,
-        isVisualizing: false,
-        visualizationReady: true,
-      }));
-
-      // Add visualization message
       const vizMessage: Message = {
-        id: (Date.now() + 2).toString(),
+        id: (nextIdRef.current++).toString(),
         role: 'assistant',
         content: 'Code Representation is ready! Toggle to see how the code works.',
       };
 
       setState((prev) => ({
         ...prev,
+        visualizationCode,
+        isVisualizing: false,
+        visualizationReady: true,
         messages: [...prev.messages, vizMessage],
       }));
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
-        return; // Cancelled, don't show error
+        return;
       }
-      
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       const errorMessageObj: Message = {
-        id: (Date.now() + 3).toString(),
+        id: (nextIdRef.current++).toString(),
         role: 'assistant',
-        content: `Sorry, there was an error: ${errorMessage}`,
+        content: `Sorry, there was an error: ${getErrorMessage(error)}`,
       };
 
       setState((prev) => ({
